@@ -3,16 +3,29 @@ import axios from 'axios';
 const API_BASE = process.env.REACT_APP_API_URL || 'https://pharmaguard-api-ic59.onrender.com';
 
 export const analyzeVCF = async (vcfFile, drugs) => {
-  // Based on your API test, it seems to expect a single drug
-  // For multiple drugs, you might need to make multiple calls
-  const drugName = Array.isArray(drugs) ? drugs[0] : drugs;
-  
+  // If API supports multiple drugs
   const response = await axios.post(`${API_BASE}/analyze`, {
-    drug_name: drugName
+    drugs: drugs
   }, {
     headers: { 'Content-Type': 'application/json' }
   });
-  
-  // Since the response might be an array of results or a single result
   return response.data;
+};
+
+// Or if you need to make separate calls for each drug:
+export const analyzeVCFMulti = async (vcfFile, drugs) => {
+  try {
+    const results = await Promise.all(
+      drugs.map(drug => 
+        axios.post(`${API_BASE}/analyze`, {
+          drug_name: drug
+        }, {
+          headers: { 'Content-Type': 'application/json' }
+        }).then(res => res.data)
+      )
+    );
+    return results;
+  } catch (error) {
+    throw error;
+  }
 };
