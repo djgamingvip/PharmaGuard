@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaGuard - Test Interface</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            background: #f0f4ff;
+            border-color: #764ba2;
+        }
+        .upload-area.dragover {
+            background: #e0e7ff;
+            border-color: #4c51bf;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .drug-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .drug-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .drug-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .drug-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .analyze-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .analyze-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        .results.show {
+            display: block;
+        }
+        .risk-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        .risk-safe { background: #d4edda; color: #155724; }
+        .risk-adjust { background: #fff3cd; color: #856404; }
+        .risk-toxic { background: #f8d7da; color: #721c24; }
+        .risk-ineffective { background: #f8d7da; color: #721c24; }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        .loading.show {
+            display: block;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .error.show {
+            display: block;
+        }
+        pre {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧬 PharmaGuard</h1>
+        <p class="subtitle">Pharmacogenomic Risk Prediction System</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <p style="font-size: 48px; margin-bottom: 10px;">📤</p>
+            <p style="font-size: 18px; font-weight: bold;">Drop VCF file here or click to select</p>
+            <p style="color: #666; margin-top: 5px;">VCF v4.2 format, max 5MB</p>
+            <input type="file" id="fileInput" accept=".vcf">
+        </div>
+        
+        <div id="fileName" style="color: #28a745; margin-bottom: 15px; display: none;">
+            ✓ File selected: <span id="fileNameText"></span>
+        </div>
+        
+        <input type="text" class="drug-input" id="drugInput" placeholder="Enter drug names (e.g., CODEINE, WARFARIN)">
+        
+        <div class="drug-buttons">
+            <button class="drug-btn" onclick="addDrug('CODEINE')">+ CODEINE</button>
+            <button class="drug-btn" onclick="addDrug('WARFARIN')">+ WARFARIN</button>
+            <button class="drug-btn" onclick="addDrug('CLOPIDOGREL')">+ CLOPIDOGREL</button>
+            <button class="drug-btn" onclick="addDrug('SIMVASTATIN')">+ SIMVASTATIN</button>
+            <button class="drug-btn" onclick="addDrug('AZATHIOPRINE')">+ AZATHIOPRINE</button>
+            <button class="drug-btn" onclick="addDrug('FLUOROURACIL')">+ FLUOROURACIL</button>
+        </div>
+        
+        <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">🔬 Analyze Risk</button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px;">Analyzing genetic data...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:5000';
+        let selectedFile = null;
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        function handleFile(file) {
+            if (!file.name.endsWith('.vcf')) {
+                showError('Please select a VCF file');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showError('File size exceeds 5MB limit');
+                return;
+            }
+            selectedFile = file;
+            document.getElementById('fileName').style.display = 'block';
+            document.getElementById('fileNameText').textContent = file.name;
+        }
+        
+        function addDrug(drug) {
+            const input = document.getElementById('drugInput');
+            const current = input.value.trim();
+            const drugs = current ? current.split(',').map(d => d.trim()) : [];
+            if (!drugs.includes(drug)) {
+                drugs.push(drug);
+                input.value = drugs.join(', ');
+            }
+        }
+        
+        async function analyze() {
+            const drugInput = document.getElementById('drugInput').value.trim();
+            
+            if (!selectedFile) {
+                showError('Please select a VCF file');
+                return;
+            }
+            
+            if (!drugInput) {
+                showError('Please enter at least one drug');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('analyzeBtn').disabled = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('vcf', selectedFile);
+                formData.append('drugs', drugInput);
+                
+                const response = await fetch(`${API_URL}/analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Analysis failed');
+                }
+            } catch (error) {
+                showError('Connection error: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+        
+        function displayResults(data) {
+            const results = Array.isArray(data) ? data : [data];
+            const resultsDiv = document.getElementById('results');
+            
+            let html = '<h2 style="margin-bottom: 20px;">📊 Analysis Results</h2>';
+            
+            results.forEach(result => {
+                const riskClass = `risk-${result.risk_assessment.risk_label.toLowerCase().replace(' ', '-')}`;
+                
+                html += `
+                    <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #ddd;">
+                        <h3 style="color: #333; margin-bottom: 15px;">${result.drug}</h3>
+                        <div class="risk-badge ${riskClass}">
+                            ${result.risk_assessment.risk_label}
+                        </div>
+                        <p style="margin: 10px 0;"><strong>Patient ID:</strong> ${result.patient_id}</p>
+                        <p style="margin: 10px 0;"><strong>Gene:</strong> ${result.pharmacogenomic_profile.primary_gene}</p>
+                        <p style="margin: 10px 0;"><strong>Diplotype:</strong> ${result.pharmacogenomic_profile.diplotype}</p>
+                        <p style="margin: 10px 0;"><strong>Phenotype:</strong> ${result.pharmacogenomic_profile.phenotype}</p>
+                        <p style="margin: 10px 0;"><strong>Confidence:</strong> ${(result.risk_assessment.confidence_score * 100).toFixed(0)}%</p>
+                        <p style="margin: 10px 0;"><strong>Severity:</strong> ${result.risk_assessment.severity}</p>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <h4 style="color: #333; margin-bottom: 10px;">💊 Clinical Recommendation</h4>
+                            <p>${result.clinical_recommendation.recommendation}</p>
+                            ${result.clinical_recommendation.alternative_drugs.length > 0 ? 
+                                `<p style="margin-top: 10px;"><strong>Alternatives:</strong> ${result.clinical_recommendation.alternative_drugs.join(', ')}</p>` 
+                                : ''}
+                        </div>
+                        
+                        <div style="background: #e7f5ff; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <h4 style="color: #333; margin-bottom: 10px;">🤖 AI Explanation</h4>
+                            <p><strong>Summary:</strong> ${result.llm_generated_explanation.summary}</p>
+                            <p style="margin-top: 10px;"><strong>Mechanism:</strong> ${result.llm_generated_explanation.mechanism}</p>
+                        </div>
+                        
+                        <details style="margin-top: 15px;">
+                            <summary style="cursor: pointer; font-weight: bold; color: #667eea;">View Full JSON</summary>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = '⚠️ ' + message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
+        }
+    </script>
+</body>
+</html>
