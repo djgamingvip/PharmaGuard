@@ -6,22 +6,22 @@ import { analyzeVCF } from './api';
 
 function App() {
   const [vcfFile, setVcfFile] = useState(null);
-  const [drugs, setDrugs] = useState([]);
+  const [drug, setDrug] = useState(''); // Changed from drugs array to single drug
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!vcfFile || drugs.length === 0) {
-      setError('Please select a VCF file and enter at least one drug.');
+    if (!vcfFile || !drug) {
+      setError('Please select a VCF file and enter a drug name.');
       return;
     }
     setLoading(true);
     setError('');
     setResults(null);
     try {
-      const data = await analyzeVCF(vcfFile, drugs);
+      const data = await analyzeVCF(vcfFile, [drug]); // Pass as array or single value
       setResults(data);
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Analysis failed');
@@ -32,7 +32,7 @@ function App() {
 
   const handleReset = () => {
     setVcfFile(null);
-    setDrugs([]);
+    setDrug('');
     setResults(null);
     setError('');
   };
@@ -62,11 +62,28 @@ function App() {
                 ✓ Selected: {vcfFile.name} ({(vcfFile.size / 1024).toFixed(1)} KB)
               </div>
             )}
-            <DrugInput onDrugsChange={setDrugs} />
+            
+            {/* Updated DrugInput to handle single drug */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Drug Name
+              </label>
+              <input
+                type="text"
+                value={drug}
+                onChange={(e) => setDrug(e.target.value)}
+                placeholder="Enter drug name (e.g., warfarin)"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500">
+                Enter a single drug name for analysis
+              </p>
+            </div>
+
             <div className="flex gap-2">
               <button 
                 type="submit" 
-                disabled={loading || !vcfFile || drugs.length === 0}
+                disabled={loading || !vcfFile || !drug}
                 className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
               >
                 {loading ? '🔄 Analyzing...' : '🔬 Analyze Risk'}
@@ -98,14 +115,10 @@ function App() {
             <div className="text-center">
               <h2 className="text-2xl font-bold text-gray-800">Analysis Results</h2>
               <p className="text-sm text-gray-600">
-                {Array.isArray(results) ? `${results.length} drugs analyzed` : '1 drug analyzed'}
+                Drug: {drug}
               </p>
             </div>
-            {Array.isArray(results) ? (
-              results.map((r, idx) => <ResultsCard key={idx} result={r} />)
-            ) : (
-              <ResultsCard result={results} />
-            )}
+            <ResultsCard result={results} />
           </div>
         )}
 
